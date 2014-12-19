@@ -18,6 +18,7 @@ import java.util.Set;
 import org.openimaj.feature.local.list.LocalFeatureList;
 import org.openimaj.feature.local.list.MemoryLocalFeatureList;
 import org.openimaj.feature.local.matcher.FastBasicKeypointMatcher;
+import org.openimaj.feature.local.matcher.MatchingUtilities;
 import org.openimaj.feature.local.matcher.consistent.ConsistentLocalFeatureMatcher2d;
 import org.openimaj.image.DisplayUtilities;
 import org.openimaj.image.ImageUtilities;
@@ -25,6 +26,7 @@ import org.openimaj.image.MBFImage;
 import org.openimaj.image.colour.RGBColour;
 import org.openimaj.image.feature.local.engine.DoGSIFTEngine;
 import org.openimaj.image.feature.local.keypoints.Keypoint;
+import org.openimaj.image.feature.local.keypoints.KeypointVisualizer;
 import org.openimaj.math.geometry.point.Point2d;
 import org.openimaj.math.geometry.shape.Polygon;
 import org.openimaj.math.geometry.shape.Shape;
@@ -33,12 +35,12 @@ import org.openimaj.math.model.fit.RANSAC;
 
 public class RacesignJava {
 
-	public static final int NUM_SIGNS=4;
-	public static final int MATCHES_THRESHOLD=10;//or 25
-	public static final String INPUT_FILENAME="C:\\Pyscript\\Sign\\Test Images\\Test Image 1.jpg";
+	public static final int NUM_SIGNS=6;
+	public static final int MATCHES_THRESHOLD=8;//or 25
+	public static final String INPUT_FILENAME="C:\\Pyscript\\Sign\\Test Images\\baltimore_small.jpg";
 	public static final String SIGN_LOOKUP_FILENAME="C:\\Pyscript\\Sign\\";
-	private static final String[] SIGN_NAMES={"Speed Limit","Exact Stop Sign","Yield Sign","Speed Limit","Stop Sign"};
-	public static final boolean MAKE_NEW_FEATURE_RECORDS=false;
+	private static final String[] SIGN_NAMES={"Stop Sign","Speed Limit","Yield Sign","Speed Limit","Exact Stop Sign","Pedestrian","Better Pedestrian","Pedestrian2"};
+	public static final boolean MAKE_NEW_FEATURE_RECORDS=true;
 	
 	public static String makeThreeDigitString(int i){
 		assert(i>=0 && i<1000):"Input needs to be a valid image number";
@@ -65,7 +67,8 @@ public class RacesignJava {
 		List<LocalFeatureList<Keypoint>> card_features = new ArrayList<LocalFeatureList<Keypoint>>(6);
 		List<CardArea> sign_areas= new ArrayList<CardArea>(NUM_SIGNS);
 		List<Integer> card_nums = new ArrayList<Integer>();
-		
+		KeypointVisualizer<Float[],MBFImage> keypointvisual;
+				
 		int num_shape_groups=0;
 		Shape current_shape;
 		Polygon current_polygon;
@@ -86,7 +89,8 @@ public class RacesignJava {
 			System.out.printf("There are %d features in target image\n",target_features.size());
 			System.out.printf("Using %d signs\n", SIGN_NAMES.length-1); //0 is unused
 			matcher.setModelFeatures((List<Keypoint>) target_features);
-
+			keypointvisual=new KeypointVisualizer(target,target_features);
+			//DisplayUtilities.display(keypointvisual.drawCenter(RGBColour.YELLOW));
 			
 			for(i=0; i<NUM_SIGNS; i++)
 			{
@@ -110,6 +114,9 @@ public class RacesignJava {
 				
 				if(num_matches_found>=MATCHES_THRESHOLD){
 
+					MBFImage consistentMatches = MatchingUtilities.drawMatches(target, tempimage, matcher.getMatches(), RGBColour.YELLOW); // similar to how an example computes matches
+					DisplayUtilities.display(consistentMatches);
+					
 					//MBFImage temp_target=original_target.clone();
 					current_shape=tempimage.getBounds().transform(fittingModel.getTransform());
 					current_polygon=current_shape.asPolygon();
@@ -142,7 +149,7 @@ public class RacesignJava {
 							}
 							else {
 								System.out.printf("Group %d is still image num %d (%s)\n",j,i,SIGN_NAMES[i]);
-								DisplayUtilities.display(target);								
+								//DisplayUtilities.display(target);								
 							}
 						}
 					}
@@ -160,9 +167,12 @@ public class RacesignJava {
 				card_nums.add(temp_signnum);
 				System.out.printf("%s, \n", SIGN_NAMES[temp_signnum] );
 				//System.out.printf("Found image %d (%s)\n", temp_cardnum ,CARD_NAMES[temp_cardnum] );
-				target.drawShape(sign_areas.get(j).getCard_shape(), 5,RGBColour.YELLOW);
+				//target.drawShape(sign_areas.get(j).getCard_shape(), 5,RGBColour.YELLOW);
+
+
 			}
 			DisplayUtilities.display(target);
+			
 			
 			if (MAKE_NEW_FEATURE_RECORDS){
 				for (i=0; i<NUM_SIGNS; i++){
